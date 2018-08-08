@@ -246,29 +246,65 @@ If you need activate CORS requests, just enable it by `withCredentials` property
 ```html
 <html>
 <head>
-<script src='browser/swagger-client.js' type='text/javascript'></script>
-<script>
+    <script src='browser/swagger-client.js' type='text/javascript'></script>
+    <script>
 
-var specUrl = 'http://petstore.swagger.io/v2/swagger.json'; // data urls are OK too 'data:application/json;base64,abc...'
-SwaggerClient.http.withCredentials = true; // this activates CORS, if necessary
-
-var swaggerClient = new SwaggerClient(specUrl)
-      .then(function (swaggerClient) {
-          return swaggerClient.apis.pet.addPet({id: 1, name: "bobby"}); // chaining promises
-      }, function (reason) {
-         console.error("failed to load the spec" + reason);
-      })
-      .then(function(addPetResult) {
-         console.log(addPetResult.obj);
-         // you may return more promises, if necessary
-      }, function (reason) {
-          console.error("failed on API call " + reason);
-      });
-</script>
+        var someNamespase = someNamespase || {};
+        someNamespase.apis = null;
+        // Init section
+        someNamespase.url = 'http://api.cruise.loc/v1/swagger.json';
+        someNamespase.token = 'TRIPUP_SSO_TOKEN'
+        // Async Callbacks
+        someNamespase.clientCallback = function (client) {
+            someNamespase.apis = client.apis;
+        }
+        someNamespase.clientResultCallback = function (data) {
+            console.log(data.obj);
+        }
+        someNamespase.errorCallback = function (reason) {
+            console.log(reason);
+        }
+        // Call api methods
+        function getSomeData() {
+            if (someNamespase.apis) {
+                someNamespase.apis["Cruise companies"].getCompanies()
+                    .then(someNamespase.clientResultCallback, someNamespase.errorCallback);
+            }
+        }
+        function getSomeOtherData() {
+            if (someNamespase.apis) {
+                someNamespase.apis.Destinations.getDestinations()
+                    .then(someNamespase.clientResultCallback, someNamespase.errorCallback);
+            }
+        }
+        // Create client
+        // SwaggerClient.http.withCredentials = true; // this activates CORS, if necessary
+        var swaggerClient = new SwaggerClient({
+            url: someNamespase.url,
+            authorizations: {
+                oAuth2: {
+                    token: { access_token: someNamespase.token }
+                }
+            },
+            requestInterceptor: function (req) {
+                req.headers['Content-Type'] = 'application/json'
+                return req
+            }
+        }).then(someNamespase.clientCallback, someNamespase.errorCallback);
+    </script>
 </head>
+
 <body>
-  check console in browser's dev. tools
+    Check console in browser's dev. tools
+    <div>
+        <button onclick="getSomeData()">Get data</button>
+    </div>
+    <br/>
+    <div>
+        <button onclick="getSomeOtherData()">Get other data</button>
+    </div>
 </body>
+
 </html>
 
 ```
